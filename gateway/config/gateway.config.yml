@@ -1,0 +1,51 @@
+http:
+  port: 8080
+
+apiEndpoints:
+  login:
+    path: /login
+    method: POST
+  register:
+    path: /register
+    method: POST
+
+  add_products:
+    path: /add_products
+    method: POST
+
+  buy_products:
+    path: /buy_products
+    method: POST
+
+  
+
+serviceEndpoints:
+  User_service:
+    url: http://localhost:5000
+  Buy_service:
+    url: http://localhost:5001
+
+policies:
+  - proxy
+
+pipelines:
+  userPipeline:
+    apiEndpoints:
+      - login
+      - register
+    policies:
+      - proxy:
+          - action:
+              serviceEndpoint: User_service
+  BuyPipeline:
+    apiEndpoints:
+      - buy_products
+      - add_products
+    policies:
+      - proxy:
+          - action:
+              serviceEndpoint: Buy_service
+
+
+
+  
