@@ -37,6 +37,8 @@ pipelines:
       - proxy:
           - action:
               serviceEndpoint: User_service
+              preserveHost: true
+              preserveBody: true
   BuyPipeline:
     apiEndpoints:
       - buy_products

@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required
 from models import db, Products, Purchases
 from dotenv import load_dotenv
 import os
@@ -15,9 +16,12 @@ app.config['SQLALCHEMY_DATABASE_URI'] = (
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+jwt = JWTManager(app)
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret-key") 
 
 db.init_app(app)
-
 
 with app.app_context():
     db.create_all()
@@ -25,7 +29,10 @@ with app.app_context():
 
 
 @app.route("/add_products", methods=["POST"])
+
+@jwt_required()
 def add_product():
+    identity = get_jwt_identity()
     data = request.get_json()
     product_name = data.get("product_name")
     quantity = data.get("quantity")
@@ -42,13 +49,15 @@ def add_product():
         )
         db.session.add(new_product)
         db.session.commit()
-        return jsonify({"message": "Product added successfully", "product_id": new_product.id}), 201
+        return jsonify({"message": f"Product added successfully{ identity }", "product_id": new_product.id}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to add product: {str(e)}"}), 500
 
 @app.route("/buy_products", methods=["POST"])
+@jwt_required()
 def buy_products():
+    user_id = get_jwt_identity()
     data = request.get_json()
     product_name = data.get("product_name")
     quantity_requested = data.get("quantity")
@@ -86,6 +95,7 @@ def buy_products():
 
         return jsonify({
             "message": "Wholesale purchase recorded successfully",
+            "user_id": user_id,
             "purchase_id": new_purchase.id,
             "product_name": product_name,
             "quantity": quantity_requested,
