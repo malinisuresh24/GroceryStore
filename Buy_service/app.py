@@ -1,5 +1,7 @@
+import csv
 from flask import Flask, request, jsonify
 from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required
+import requests
 from models import db, Products, Purchases
 from dotenv import load_dotenv
 import os
@@ -14,7 +16,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = (
     f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
 )
 
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 jwt = JWTManager(app)
 
@@ -49,7 +51,7 @@ def add_product():
         )
         db.session.add(new_product)
         db.session.commit()
-        return jsonify({"message": f"Product added successfully{ identity }", "product_id": new_product.id}), 201
+        return jsonify({"message": f"Product added successfully{ identity }", "product_id": new_product.id}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to add product: {str(e)}"}), 500
@@ -79,19 +81,61 @@ def buy_products():
         purchase_time = datetime.utcnow()
 
     
+        
+        payment_payload = {
+            "amount": total_cost,
+            "user_id": user_id,
+            "product_name": product_name,
+            "quantity":quantity_requested,
+            "price":price_per_unit
+        }
+
+        try:
+            payment_response = requests.post("http://localhost:5002/payment", json=payment_payload, timeout=5)
+            payment_data = payment_response.json()
+        except Exception as e:
+            return jsonify({"error": f"Payment service unavailable: {str(e)}"}), 503
+
+        if payment_data.get("payment_status") != "success":
+            
+            return jsonify({"error": "Payment failed", "payment_data": payment_data}), 402
+
+        
         new_purchase = Purchases(
             product_id=product.id,
+            product_name=product_name,
             quantity=quantity_requested,
             amount=price_per_unit,
             total_cost=total_cost,
-            purchased_on=purchase_time
+            purchased_on=datetime.utcnow()
         )
         db.session.add(new_purchase)
 
-     
         product.quantity -= quantity_requested
-
         db.session.commit()
+
+
+        csv_file = "purchase_log.csv"
+        file_exists = os.path.isfile(csv_file)
+
+        with open(csv_file, mode="a", newline="") as file:
+            writer = csv.writer(file)
+            if not file_exists:
+                writer.writerow([
+                    "Transaction ID", "User ID", "Product Name", "Quantity", 
+                    "Price per Unit", "Total Cost", "Payment Status", "Purchase Time"
+                ])
+            writer.writerow([
+                payment_data.get("transaction_id"),
+                user_id,
+                product_name,
+                quantity_requested,
+                price_per_unit,
+                total_cost,
+                payment_data.get("payment_status"),
+                purchase_time
+            ])
+
 
         return jsonify({
             "message": "Wholesale purchase recorded successfully",

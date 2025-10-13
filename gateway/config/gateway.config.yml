@@ -17,13 +17,12 @@ apiEndpoints:
     path: /buy_products
     method: POST
 
-  
-
 serviceEndpoints:
   User_service:
     url: http://localhost:5000
   Buy_service:
     url: http://localhost:5001
+  
 
 policies:
   - proxy

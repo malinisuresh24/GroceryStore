@@ -1,0 +1,7 @@
+Transaction ID,User ID,Product Name,Quantity,Price per Unit,Total Cost,Payment Status,Purchase Time
+TXN_0SFDOCTSRP,7,tea powder 5kg,10,12.0,120.0,success,2025-10-10 04:45:03.720210
+
+TXN_0AJOE3B4T7,7,noddles,5,12.0,60.0,success,2025-10-10 04:54:49.573221
+TXN_9B6N3LI0PH,7,paste,5,12.0,60.0,success,2025-10-10 05:43:25.303024
+TXN_F07X87F42T,7,curd,5,12.0,60.0,success,2025-10-13 04:01:25.800765
+TXN_4C2YQZTNGX,7,chai,50,12.0,600.0,success,2025-10-13 04:10:27.692633
